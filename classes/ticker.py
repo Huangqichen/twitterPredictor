@@ -4,9 +4,6 @@ from bs4 import BeautifulSoup
 import urllib2
 import mysql.connector
 import logging
-logging.basicConfig(filename='logs/ticker.log',
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(message)s')
 
 class Ticker:
     def __init__(self):
@@ -19,6 +16,8 @@ class Ticker:
         'raise_on_warnings': True,}
         self.__cnxn = mysql.connector.connect(**self.__config)
         self.__cursor = self.__cnxn.cursor()
+        self.setup_logger('tlog', r'logs/t.log')
+        self.tlog = logging.getLogger('tlog')
         self.__tickerList = []
         self.scrapeTickers()
 
@@ -43,7 +42,7 @@ class Ticker:
                 self.__cursor.execute(addTicker)
                 self.__cnxn.commit()
             except Exception as e:
-                logging.warning(e)
+                self.tlog.warning(e)
                 print e
                 pass
             else:
@@ -62,3 +61,15 @@ class Ticker:
     def chunkTickers(self):
         chunks=[self.getTickers()[x:x+200] for x in xrange(0, len(self.getTickers()), 200)]
         return chunks
+
+    def setup_logger(self, logger_name, log_file, level=logging.INFO):
+        l = logging.getLogger(logger_name)
+        formatter = logging.Formatter('%(asctime)s : %(message)s')
+        fileHandler = logging.FileHandler(log_file, mode='w')
+        fileHandler.setFormatter(formatter)
+        streamHandler = logging.StreamHandler()
+        streamHandler.setFormatter(formatter)
+
+        l.setLevel(level)
+        l.addHandler(fileHandler)
+        l.addHandler(streamHandler)
